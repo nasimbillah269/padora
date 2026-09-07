@@ -288,7 +288,7 @@
 }
 .whatsapp-btn span {
     color: #fff;
-    font-size: 18px;
+    font-size: 15px;
 }
 .call-btn {
     background-color: #ffffff;
