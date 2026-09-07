@@ -1,0 +1,230 @@
+.breadcrumb-nav {
+    background-color: #f8f9fa;
+    padding: 12px 0;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.breadcrumb {
+    display: flex;
+    flex-wrap: wrap;
+    padding: 0;
+    margin: 0;
+    list-style: none;
+    align-items: center;
+}
+
+.breadcrumb-item {
+    font-size: 14px;
+    font-weight: 500;
+    color: #6c757d;
+    display: flex;
+    align-items: center;
+}
+
+.breadcrumb-item a {
+    color: #333333;
+    text-decoration: none;
+    transition: color 0.2s ease-in-out;
+}
+
+.breadcrumb-item a:hover {
+    color: #ff4a52; /* আপনার থিমের প্রাইমারি কালার দিতে পারেন */
+}
+
+.breadcrumb-item a i {
+    font-size: 13px;
+    margin-right: 4px;
+}
+
+/* Separator Slash (/) Styling */
+.breadcrumb-item + .breadcrumb-item::before {
+    content: "/";
+    padding: 0 8px;
+    color: #a0a0a0;
+    font-weight: 400;
+}
+
+/* Active / Current Page State */
+.breadcrumb-item.active {
+    color: #ff4a52; /* Active category color */
+    font-weight: 600;
+}
+
+/* Category Navigation Bar Styling */
+        .category-navbar {
+            background-color: #8327801f; /* Light Mint Green background from your image */
+            padding: 40px 0;
+            overflow-x: auto;
+            white-space: nowrap;
+        }
+
+        /* Hide Scrollbar for clean look */
+        .category-navbar::-webkit-scrollbar {
+            display: none;
+        }
+        .category-navbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        /* Category Item Card */
+        .category-item {
+            display: inline-flex;
+            flex-direction: column;
+            align-items: center;
+            text-decoration: none;
+               margin: 0 40px;
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+
+        .category-item:hover {
+            transform: translateY(-3px);
+        }
+
+        /* Icon Circle Container */
+        .icon-circle {
+            width: 52px;
+            height: 52px;
+            background-color: #fcfffd; /* Inner lighter green circle */
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            padding: 8px;
+        }
+        .icon-circle img {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Font Awesome Icons styling */
+        .icon-circle i {
+            font-size: 20px;
+            color: #672678; /* Warm icon color matching the image style */
+        }
+
+        /* Category Label */
+        .category-label {
+            font-size: 14px;
+            font-weight: 700;
+            color: #0f3822; /* Dark green text matching image */
+            text-align: center;
+            font-family: system-ui, -apple-system, sans-serif;
+        }
+        
+        
+        
+        
+        /* Sidebar Container */
+.filter-sidebar {
+    background: #ffffff !important ;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    margin-top: 30px;
+}
+
+/* Filter Group Titles */
+.filter-group-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #222222;
+    margin-bottom: 15px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #f1f1f1;
+    position: relative;
+}
+
+.filter-group-title::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    width: 35px;
+    height: 2px;
+    background-color: #ff4a52; /* Accent Color */
+}
+
+/* Checkbox & Radio Item Styling */
+.filter-group .form-check {
+    margin-bottom: 10px;
+    display: flex;
+    align-items: center;
+}
+
+.filter-group .form-check-input {
+    cursor: pointer;
+    width: 17px;
+    height: 17px;
+    margin-top: 0;
+    border-color: #cccccc;
+}
+
+.filter-group .form-check-input:checked {
+    background-color: #ff4a52;
+    border-color: #ff4a52;
+}
+
+.filter-group .form-check-label {
+    cursor: pointer;
+    font-size: 14px;
+    color: #555555;
+    margin-left: 8px;
+    transition: color 0.2s ease;
+}
+
+.filter-group .form-check-label:hover {
+    color: #ff4a52;
+}
+
+/* Range Slider Styling */
+.price-range-display {
+    font-size: 14px;
+    font-weight: 600;
+    color: #333;
+    background: #f8f9fa;
+    padding: 6px 12px;
+    border-radius: 4px;
+    display: inline-block;
+}
+
+.form-range {
+    accent-color: #ff4a52;
+    cursor: pointer;
+}
+        
+ div#productContainer {
+    margin-top: 20px;
+}
+        .collUs a {
+    color: #110215;
+}
+        
+@media only screen and (max-width: 767px) {
+    .productGrid {
+           margin-bottom: 20px !important;
+    }
+    .category-item {
+    margin: 0px 10px;
+    }
+    .category-navbar {
+        background-color: #8327801f;
+        padding: 20px 0;
+    }
+    .headerAccount ul li {
+        display: inline-block;
+        margin-left: 12px;
+    }
+    .popular-brands-section h4 {
+    font-size: 15px;
+}
+    
+}
+        
+        
+        
+        

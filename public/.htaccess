@@ -1,0 +1,40 @@
+<IfModule mod_rewrite.c>
+    <IfModule mod_negotiation.c>
+        Options -MultiViews -Indexes
+    </IfModule>
+
+    RewriteEngine On
+
+    # Handle Authorization Header
+    RewriteCond %{HTTP:Authorization} .
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+    # Redirect Trailing Slashes If Not A Folder...
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_URI} (.+)/$
+    RewriteRule ^ %1 [L,R=301]
+
+    # Send Requests To Front Controller...
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteRule ^ index.php [L]
+</IfModule>
+
+# ----------------------------------------------------------------------
+# Security hardening
+# ----------------------------------------------------------------------
+
+# Never serve dotfiles (.env, .git, .htaccess, .user.ini, ...)
+<FilesMatch "^\.">
+    Require all denied
+</FilesMatch>
+
+# Block source / config / dependency files from being downloaded
+<FilesMatch "\.(env|ini|log|sh|bak|bat|sql|md|lock|json|yml|yaml|dist|twig|tpl)$">
+    Require all denied
+</FilesMatch>
+
+# Block script types that must never execute from the web root
+<FilesMatch "\.(phtml|php3|php4|php5|php7|pht|phar|phps|cgi|pl|py|asp|aspx|jsp|sh)$">
+    Require all denied
+</FilesMatch>

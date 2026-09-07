@@ -1,0 +1,23 @@
+# Uploads directory — NEVER execute code here, only serve static media.
+
+# Disable any PHP handler (Apache mod_php, CGI, FPM aliases)
+<IfModule mod_php7.c>
+    php_flag engine off
+</IfModule>
+<IfModule mod_php.c>
+    php_flag engine off
+</IfModule>
+RemoveHandler .php .phtml .php3 .php4 .php5 .php7 .php8 .pht .phar .phps
+RemoveType .php .phtml .php3 .php4 .php5 .php7 .php8 .pht .phar .phps
+
+# Hard-deny every executable / server-parsed type by extension
+<FilesMatch "\.(php|phtml|php3|php4|php5|php7|php8|pht|phar|phps|cgi|pl|py|asp|aspx|jsp|sh|htaccess|htc)$">
+    Require all denied
+</FilesMatch>
+
+# Only allow known-safe media/document extensions to be served
+<FilesMatch "(?i)\.(jpe?g|png|gif|webp|bmp|svg|ico|avif|mp4|webm|ogg|mp3|wav|pdf|docx?|xlsx?|csv|txt|zip)$">
+    Require all granted
+</FilesMatch>
+
+Options -ExecCGI -Indexes

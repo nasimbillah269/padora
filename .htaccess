@@ -1,0 +1,48 @@
+# ======================================================================
+#  Pandora Fashion — root .htaccess
+#  NOTE: The correct, safest setup is to point the web server's document
+#  root at the /public folder. This file only hardens the fallback case
+#  where the project root itself is web-exposed.
+# ======================================================================
+
+<IfModule mod_rewrite.c>
+    <IfModule mod_negotiation.c>
+        Options -MultiViews -Indexes
+    </IfModule>
+
+    RewriteEngine On
+
+    # Handle Authorization Header
+    RewriteCond %{HTTP:Authorization} .
+    RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+    # Block direct web access to framework internals & sensitive paths
+    RewriteRule ^(\.git|\.github|app|bootstrap|config|database|resources|routes|storage|tests|test|node_modules|vendor)(/|$) - [F,L,NC]
+    RewriteRule ^(artisan|composer\.(json|lock)|package(-lock)?\.json|phpunit\.xml|README\.md|\.env.*)$ - [F,L,NC]
+
+    # Serve real files/dirs under /public directly, everything else via the app
+    RewriteCond %{REQUEST_URI} !^/public/
+    RewriteCond %{DOCUMENT_ROOT}/public%{REQUEST_URI} -f [OR]
+    RewriteCond %{DOCUMENT_ROOT}/public%{REQUEST_URI} -d
+    RewriteRule ^(.*)$ public/$1 [L]
+
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteRule ^ public/index.php [L]
+</IfModule>
+
+# Never serve dotfiles
+<FilesMatch "^\.">
+    Require all denied
+</FilesMatch>
+
+# Block sensitive file types anywhere under the root
+<FilesMatch "\.(env|ini|log|sh|bak|sql|lock|twig|tpl|blade\.php)$">
+    Require all denied
+</FilesMatch>
+
+# Block executable scripts hidden as other types is not possible here, but
+# deny the obvious secondary script extensions from executing/serving
+<FilesMatch "\.(phtml|php3|php4|php5|php7|pht|phar|phps|cgi|pl|py|asp|aspx|jsp)$">
+    Require all denied
+</FilesMatch>
