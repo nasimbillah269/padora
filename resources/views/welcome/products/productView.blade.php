@@ -526,7 +526,7 @@
     }
 
     .singleProductContainer {
-         padding: 10px;
+         padding: 0px;
     }
     
     .gallery__thumbs a {

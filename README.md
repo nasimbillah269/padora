@@ -1,3 +1,49 @@
+# Pandora Fashion
+
+Laravel-based e-commerce store (men's & women's clothing).
+
+## Setup (fresh install)
+
+```bash
+composer install
+cp .env.example .env
+php artisan key:generate
+```
+
+Create a MySQL database and set `DB_DATABASE` (and other `DB_*` values) in `.env`, then run:
+
+```bash
+php artisan migrate --seed
+```
+
+This creates all tables and seeds:
+
+- **App settings** (site title, currency, shipping charges, theme — see `database/seeders/GeneralSeeder.php`). Mail/SMS/OAuth credentials are left blank on purpose — set them from **Admin Panel → App Setting** after install, never commit them to the repo.
+- **Super admin permission** (`administrator`, full access to every admin panel section) — `database/seeders/PermissionSeeder.php`.
+- **Countries** — divisions/districts/thanas for Bangladesh, 856 rows, from `database/seeders/data/countries.json` — `database/seeders/CountrySeeder.php`.
+- **Default admin user** — `database/seeders/AdminUserSeeder.php`:
+  - Email: `rabiulk449@gmail.com`
+  - Password: `123456789`
+
+  Log in at `/login`, then change this password from **My Account → Change Password**.
+
+Only need one seeder (e.g. after `migrate:fresh`)? Run it directly:
+
+```bash
+php artisan db:seed --class=GeneralSeeder
+php artisan db:seed --class=PermissionSeeder
+php artisan db:seed --class=CountrySeeder
+php artisan db:seed --class=AdminUserSeeder
+```
+
+Serve the app with `public/` as the document root (e.g. `php artisan serve`, or point your Apache/Nginx vhost at the `public/` folder) — URLs are not prefixed with `/public`.
+
+```bash
+php artisan serve
+```
+
+---
+
 <p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
 
 <p align="center">
