@@ -224,7 +224,10 @@
     height: unset;
 }
 
+.headerDropdownMenu {
+    padding: 15px 12px;
 
+}
 
 
         </style>
