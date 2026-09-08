@@ -3034,10 +3034,11 @@ public function brandsAction(Request $r,$action,$id=null){
 
       $general->mail_from_address=$r->mail_from_address;
       $general->mail_from_name=$r->mail_from_name;
-      $general->mail_driver=$r->mail_driver;
+      // store transport/encryption lowercase so Laravel's mail manager accepts them
+      $general->mail_driver=$r->mail_driver ? strtolower(trim($r->mail_driver)) : $r->mail_driver;
       $general->mail_host=$r->mail_host;
       $general->mail_port=$r->mail_port;
-      $general->mail_encryption=$r->mail_encryption;
+      $general->mail_encryption=$r->mail_encryption ? strtolower(trim($r->mail_encryption)) : $r->mail_encryption;
       $general->mail_username=$r->mail_username;
       $general->mail_password=$r->mail_password;
       $general->admin_mails=$r->admin_mails;

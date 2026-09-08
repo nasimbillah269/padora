@@ -662,15 +662,23 @@ class CartController extends Controller
             
             //**********Send Mail***************//
 
-            if(general()->mail_status && $order->email){
+            if(general()->mail_status){
                 //Mail Data
-                $datas =array('user'=>$order);
+                $datas =array('order'=>$order);
                 $template ='mails.InvoiceMail';
-                $toEmail =$order->email;
-                $toName =$order->name;
-                $subject ='Success, Order Successfully Submitted' .general()->title;
-            
-             sendMail($toEmail,$toName,$subject,$datas,$template);
+                $subject ='Success, Order Successfully Submitted ' .general()->title;
+
+                // 1) confirmation to the customer (only if they gave an email)
+                if($order->email){
+                    sendMail($order->email,$order->name,$subject,$datas,$template);
+                }
+
+                // 2) notification to the shop owner / admins (Author Mail setting,
+                //    comma separated) so a new order is never missed
+                $adminMails = array_filter(array_map('trim', explode(',', (string) general()->admin_mails)));
+                foreach($adminMails as $adminMail){
+                    sendMail($adminMail, general()->title, 'New Order #'.$order->invoice.' - '.general()->title, $datas, $template);
+                }
             }
             //**********Send Mail***************//
             // Storing a single value

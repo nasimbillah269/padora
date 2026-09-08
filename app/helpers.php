@@ -168,8 +168,10 @@ function sendMail($toEmail,$toName,$subject,$datas,$template,$attachments=null){
     });
    
       return true;
-  } catch (Exception $ex) {
-      // Debug via $ex->getMessage();
+  } catch (\Throwable $ex) {
+      // Don't let a mail failure break the request, but leave a trace in
+      // storage/logs/laravel.log so misconfigured SMTP is diagnosable.
+      \Log::error('sendMail failed: '.$ex->getMessage(), ['to' => $toEmail, 'template' => $template]);
       return false;
   }
 
