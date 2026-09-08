@@ -699,24 +699,24 @@
                     <div class="delivery-options-container">
                         
                         <label class="delivery-option">
-                            <input type="radio" name="shipping_charge" value="50" checked>
+                            <input type="radio" name="shipping_charge" value="80" checked>
                             <span class="custom-radio"></span>
-                            <span class="option-title">ঢাকা সিটির ভেতরে</span>
-                            <span class="option-price">50 TK</span>
-                        </label>
-            
-                        <label class="delivery-option">
-                            <input type="radio" name="shipping_charge" value="80">
-                            <span class="custom-radio"></span>
-                            <span class="option-title">ঢাকা সিটির বাহিরে</span>
+                            <span class="option-title">ঢাকা সিটি</span>
                             <span class="option-price">80 TK</span>
                         </label>
-            
+
                         <label class="delivery-option">
                             <input type="radio" name="shipping_charge" value="100">
                             <span class="custom-radio"></span>
-                            <span class="option-title">ঢাকা জেলার বাহিরে</span>
+                            <span class="option-title">ঢাকা সাব সিটি</span>
                             <span class="option-price">100 TK</span>
+                        </label>
+
+                        <label class="delivery-option">
+                            <input type="radio" name="shipping_charge" value="150">
+                            <span class="custom-radio"></span>
+                            <span class="option-title">ঢাকার বাহিরে</span>
+                            <span class="option-price">150 TK</span>
                         </label>
             
                     </div>
@@ -805,7 +805,7 @@
                               <input type="text" class="form-control valuecheck3" name="address"
                               value="{{ optional(Auth::user())->address_line1 ?? '' }}"
                               required=""
-                              placeholder="বাসা নম্বর, গ্রাম/মহল্লা, উপজেলা, জেলা"
+                              placeholder="গ্রাম/মহল্লা, থানা, জেলা"
                               >
                             </div>
                             <input type="hidden" name="payment_option" value="handCash">
