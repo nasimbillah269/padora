@@ -802,13 +802,30 @@
                               <span class="input-group-text">
                                   <i class="fa fa-map"></i>
                               </span>
-                              <input type="text" class="form-control valuecheck3" name="address" 
+                              <input type="text" class="form-control valuecheck3" name="address"
                               value="{{ optional(Auth::user())->address_line1 ?? '' }}"
                               required=""
                               placeholder="বাসা নম্বর, গ্রাম/মহল্লা, উপজেলা, জেলা"
                               >
                             </div>
                             <input type="hidden" name="payment_option" value="handCash">
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <label for="staticEmail" class="col-md-12 col-12 col-form-label">
+                            ইমেইল (অপশনাল)
+                        </label>
+                        <div class="col-md-12 col-12">
+                            <div class="input-group mb-3">
+                              <span class="input-group-text">
+                                  <i class="fa fa-envelope"></i>
+                              </span>
+                              <input type="email" class="form-control valuecheck3" name="email"
+                              value="{{ optional(Auth::user())->email ?? '' }}"
+                              placeholder="আপনার ইমেইল ঠিকানা"
+                              >
+                            </div>
                         </div>
                     </div>
 
@@ -897,12 +914,68 @@
                     if ($total.length) {
                         $modal.find('.cartItemsTotal').replaceWith($total);
                     }
+
+                    // server re-renders the price table with shipping = 0,
+                    // so re-apply the delivery option the customer picked
+                    if (window.updateModalShipping) { window.updateModalShipping(); }
                 })
                 .always(function () {
                     $('#exampleModal .modalQtyBtn').prop('disabled', false);
                 });
         });
     }
+</script>
+
+<script>
+    // Keep the "মূল্য বিবরণ" panel in sync with the selected delivery option.
+    // The chosen shipping_charge is also posted to CartController@checkout,
+    // which stores it on the order — this block only fixes the live preview.
+    (function () {
+        var CURRENCY = @json(general()->currency);
+        var DECIMALS = {{ (int) general()->currency_decimal }};
+        var POSITION = {{ (int) general()->currency_position }};
+        var MIN_SHOPPING = {{ (float) (general()->minimum_shopping ?? 0) }};
+
+        function parseMoney(text) {
+            return parseFloat(String(text).replace(/[^0-9.]/g, '')) || 0;
+        }
+
+        function numberFmt(n) {
+            return Number(n).toLocaleString('en-US', {
+                minimumFractionDigits: DECIMALS,
+                maximumFractionDigits: DECIMALS
+            });
+        }
+
+        function moneyFmt(n) {
+            var s = numberFmt(n);
+            return POSITION == 0 ? (CURRENCY + ' ' + s) : (s + ' ' + CURRENCY);
+        }
+
+        function applyShipping() {
+            var $modal = $('#exampleModal');
+            var $sel = $modal.find('input[name="shipping_charge"]:checked');
+            var $table = $modal.find('.cartItemsTotal table');
+            if (!$sel.length || !$table.length) { return; }
+
+            var shipping = parseFloat($sel.val()) || 0;
+            var subtotal = parseMoney($table.find('tr').eq(0).find('td').last().text());
+            if (MIN_SHOPPING > 0 && subtotal >= MIN_SHOPPING) { shipping = 0; }
+
+            var $shipCell = $modal.find('.shippingChargeAmount');
+            var $grandCell = $modal.find('.grandTotal');
+            // base = everything except shipping (subtotal + tax - discount)
+            var base = parseMoney($grandCell.text()) - parseMoney($shipCell.text());
+
+            $shipCell.text(moneyFmt(shipping));
+            $grandCell.text(numberFmt(base + shipping));
+        }
+
+        window.updateModalShipping = applyShipping;
+
+        $(document).on('change', '#exampleModal input[name="shipping_charge"]', applyShipping);
+        $(document).on('shown.bs.modal', '#exampleModal', applyShipping);
+    })();
 </script>
 
 @endif

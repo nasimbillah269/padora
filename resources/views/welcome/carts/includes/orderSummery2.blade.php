@@ -16,7 +16,7 @@
         @endif
         </td>
         <td style="border:none;text-align: right;">
-        <span class="shippingChang">{{priceFullFormat($shippingCharge)}}</span>
+        <span class="shippingChang shippingChargeAmount">{{priceFullFormat($shippingCharge)}}</span>
         </td>
     </tr>
     @if($couponDisc > 0)
