@@ -685,7 +685,7 @@ class CartController extends Controller
 
             
             if(general()->sms_status && $order->mobile){
-                $msg ='Thank you for shopping. Your Order # '.$order->invoice;
+                $msg = 'Thank you for shopping with Pandora Fashion Premium Quality Fashion Cloth. Your Order #'.$order->invoice.' has been received successfully. We appreciate your business!';
                 sendSMS($order->mobile,$msg);
             }
 
