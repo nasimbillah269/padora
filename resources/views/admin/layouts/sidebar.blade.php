@@ -194,14 +194,14 @@
                     <span class="menu-title">Mail Setting</span>
                 </a>
             </li>
-            @endisset {{--@isset(json_decode($roles->permission, true)['appsSetting']['sms'])
+            @endisset @isset(json_decode($roles->permission, true)['appsSetting']['sms'])
             <li class=" nav-item {{Request::is('admin/setting/sms*')? 'active' : ''}}">
                 <a href="{{route('admin.setting','sms')}}">
                     <i class="fas fa-comments"></i>
                     <span class="menu-title">SMS Setting</span>
                 </a>
             </li>
-            @endisset--}} @isset(json_decode($roles->permission, true)['appsSetting']['social'])
+            @endisset @isset(json_decode($roles->permission, true)['appsSetting']['social'])
             <li class=" nav-item {{Request::is('admin/setting/social*')? 'active' : ''}}">
                 <a href="{{route('admin.setting','social')}}">
                     <i class="fab fa-codepen"></i>
