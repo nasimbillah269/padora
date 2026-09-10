@@ -681,6 +681,17 @@ class CartController extends Controller
                 }
             }
             //**********Send Mail***************//
+
+
+            
+            if(general()->sms_status && $order->mobile){
+                $msg ='Thank you for shopping. Your Order # '.$order->invoice;
+                sendSMS($order->mobile,$msg);
+            }
+
+
+
+
             // Storing a single value
             session(['purchases' => 'yes']);
             return redirect()->route('invoiceView',$order->invoice)->with('success', 'Order successfully submitted');
