@@ -13,6 +13,8 @@ use Cookie;
 use Socialite;
 use Redirect,Response;
 use App\Models\User;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\RateLimiter;
 use App\Models\SocialIdentity;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
@@ -90,173 +92,405 @@ class AuthController extends Controller
     }
 
 
-    public function register(Request $r){
-
-        if ($r->isMethod('post'))
-        {
-        
-        $check = $r->validate([
-            'name' => 'required|max:100',
-            'email' => 'required|max:100|unique:users,email',
-            'password' => 'required|min:5'
-        ]);
-
-        if(!$check){
-            return back();
+    public function register(Request $r)
+    {
+        // ---------- Not a POST -> just show the form ----------
+        if (!$r->isMethod('post')) {
+            return view('auth.register');
         }
-        
-        //User Create
-        $user =new User();
-        $user->name=$r->name;
-        $user->mobile=$r->mobile;
-        $user->email=$r->email;
-        $user->password=Hash::make($r->password);
-        $user->password_show=$r->password;
-        $user->country=1;
-        $user->save();
-
-        Auth::login($user);
-        
-        //Mail Send/SMS Send
-        
-        //**********Send Mail***************//
-
-        if(general()->mail_status && $user->email){
-            //Mail Data
-            $datas =array('user'=>$user);
-            $template ='mails.registrationMail';
-            $toEmail =$user->email;
-            $toName =$user->name;
-            $subject ='Registration Successfully Completed in '.general()->title;
-        
-            sendMail($toEmail,$toName,$subject,$datas,$template);
+     
+        // ---------- Honeypot: bots fill every field they can see in the
+        // DOM, even ones hidden with CSS. Real users never touch this. ----------
+        if (filled($r->input('company_website'))) {
+            return response()->json([
+                'status'  => false,
+                'message' => 'Invalid request.',
+            ]);
         }
-        //**********Send Mail***************//
-        
-        if(Auth::check()){
-            return Redirect()->route('customer.dashboard');
-        }else{
-            Session::flash('success','Your Registration Successfully Done!');
-            return Redirect()->route('login');
-        }
-
-    }else{
-        //Session::put('verifycode','123456');
-        return view('auth.register',compact('r'));
-    } 
-
-
-    }
-
-
-    public function forgotPassword(Request $r){
-        
-        if ($r->isMethod('post'))
-        {
-
-        $check = $r->validate([
-            '_token' => 'required',
-            'emailormobile' => 'required|max:100',
-        ]);
-
-        if(!$check){
-            Session::flash('error','Need To validation');
-            return back();
-        }
-        Session::flash('success','Recover Password Are Not Allow');
-        return back();
-        $general = General::first();
-        
-        if(is_numeric($r->emailormobile)){
-        
-        $user =User::where('mobile',$r->emailormobile)->first();
-
-        if(!$user){
-            Session::flash('error','There is no account with the Mobile number you provided.');
-            return back(); 
-        }
-        $verifycode = mt_rand(100000,999999);
-        $token = app(\Illuminate\Auth\Passwords\PasswordBroker::class)->createToken($user);
-        $user->remember_token=$token;
-        $user->verify_code=$verifycode;
-        $user->save();
-        
-       //**********Send SMS ***************//
-        
-        if($general->sms_status && $user->mobile){
-
-            //Send SMS User
-                
-                $m =$user->mobile;
-                
-                $to =bdMobile($m);
-                
-                if(strlen($to) != 13)
-                {
-                    return true;
-                }
-                
-                $msg = urlencode("You Forget Password OTP code is {$verifycode} in {$general->title}"); //150 characters allowed here
-    
-                $url = smsUrl($to,$msg);
-            
-                $client = new Client();
-                
-                try {
-                        $r = $client->request('GET', $url);
-                    } catch (\GuzzleHttp\Exception\ConnectException $e) {
-                    } catch (\GuzzleHttp\Exception\ClientException $e) {
+     
+        $action = $r->input('action');
+     
+        // ============================================================
+        // ACTION: send_otp  (Step 1 submit)
+        // ============================================================
+        if ($action === 'send_otp') {
+     
+            // ---- Rate limit #1: per IP ----
+            $ipKey = 'otp-send-ip:' . $r->ip();
+     
+            if (RateLimiter::tooManyAttempts($ipKey, 5)) {
+                $seconds = RateLimiter::availableIn($ipKey);
+                return response()->json([
+                    'status'  => false,
+                    'message' => 'Too many attempts from this device. Please try again in ' . ceil($seconds / 60) . ' minute(s).',
+                ]);
+            }
+     
+            $validator = Validator::make($r->all(), [
+                'name'     => ['required', 'string', 'min:2', 'max:60', function ($attribute, $value, $fail) {
+                    if (!preg_match('/^[\pL\s\.\-\']+$/u', $value)) {
+                        $fail('Name may only contain letters and spaces.');
+                        return;
                     }
-        
-        }
-        
-        //**********Send SMS ***************//
-        
-        Session::flash('success','We send SMS Reset 6 digit Code Your Mobile Number!');
-        return Redirect()->route('resetPassword',$token);
-
-        }else if(filter_var($r->emailormobile, FILTER_VALIDATE_EMAIL)) {
-
-            $user =User::where('email',$r->emailormobile)->first();
-
-            if(!$user){
-                Session::flash('error','There is no account with the Email address you provided.');
-                return back(); 
+                    if (preg_match('/(.)\1{3,}/u', $value)) {
+                        $fail('Please enter a valid name.');
+                        return;
+                    }
+                    if (preg_match('/^[A-Za-z\s\.\-\']+$/', $value) && !preg_match('/[AEIOUaeiou]/', $value)) {
+                        $fail('Please enter a valid name.');
+                    }
+                }],
+                'contact'  => 'required|max:100',
+                'password' => 'required|min:5|confirmed',
+            ]);
+     
+            if ($validator->fails()) {
+                return response()->json([
+                    'status' => false,
+                    'errors' => $validator->errors(),
+                ]);
             }
-
-            $token = app(\Illuminate\Auth\Passwords\PasswordBroker::class)->createToken($user);
-            $user->remember_token=$token;
+     
+            $contact = trim($r->contact);
+            $isEmail = (bool) filter_var($contact, FILTER_VALIDATE_EMAIL);
+     
+            if ($isEmail) {
+                if (User::where('email', $contact)->exists()) {
+                    return response()->json([
+                        'status' => false,
+                        'errors' => ['contact' => ['This email is already registered.']],
+                    ]);
+                }
+            } else {
+                if (User::where('mobile', $contact)->exists()) {
+                    return response()->json([
+                        'status' => false,
+                        'errors' => ['contact' => ['This mobile number is already registered.']],
+                    ]);
+                }
+            }
+     
+            // ---- Rate limit #2: per contact (SMS/mail cost control) ----
+            $contactKey = 'otp-send-contact:' . $contact;
+     
+            if (RateLimiter::tooManyAttempts($contactKey, 3)) {
+                return response()->json([
+                    'status' => false,
+                    'errors' => ['contact' => ['Too many OTP requests for this ' . ($isEmail ? 'email' : 'number') . '. Please try again tomorrow.']],
+                ]);
+            }
+     
+            RateLimiter::hit($ipKey, 600);        // 10 minutes
+            RateLimiter::hit($contactKey, 86400); // 24 hours
+     
+            $otp = random_int(100000, 999999);
+     
+            session([
+                'reg_data' => [
+                    'name'             => $r->name,
+                    'contact'          => $contact,
+                    'is_email'         => $isEmail,
+                    'password'         => $r->password,
+                    'otp'              => $otp,
+                    'otp_expires_at'   => now()->addMinutes(5),
+                    'otp_last_sent_at' => now(),
+                    'verify_attempts'  => 0,
+                ],
+            ]);
+     
+            if ($isEmail) {
+                if (general()->mail_status) {
+                    sendMail(
+                        $contact,
+                        $r->name,
+                        'Your Verification Code - ' . general()->title,
+                        ['name' => $r->name, 'otp' => $otp],
+                        'mails.otpMail'
+                    );
+                }
+            } else {
+                $smsResult = sendSMS($contact, "Your verification code is: {$otp}");
+     
+                if (!$smsResult['success']) {
+                    session()->forget('reg_data');
+     
+                    return response()->json([
+                        'status'  => false,
+                        'message' => 'Could not send the OTP. Please try again.',
+                    ]);
+                }
+            }
+     
+            return response()->json([
+                'status'         => true,
+                'message'        => 'OTP sent successfully.',
+                'next_resend_in' => 60,
+            ]);
+        }
+     
+        // ============================================================
+        // ACTION: resend_otp
+        // ============================================================
+        if ($action === 'resend_otp') {
+     
+            $reg = session('reg_data');
+     
+            if (!$reg) {
+                return response()->json([
+                    'status'  => false,
+                    'message' => 'Session expired. Please start registration again.',
+                ]);
+            }
+     
+            $secondsPassed = now()->diffInSeconds($reg['otp_last_sent_at']);
+     
+            if ($secondsPassed < 60) {
+                $remaining = 60 - $secondsPassed;
+                return response()->json([
+                    'status'    => false,
+                    'message'   => 'Please wait ' . $remaining . ' seconds before requesting another code.',
+                    'remaining' => $remaining,
+                ]);
+            }
+     
+            $contactKey = 'otp-send-contact:' . $reg['contact'];
+     
+            if (RateLimiter::tooManyAttempts($contactKey, 3)) {
+                return response()->json([
+                    'status'  => false,
+                    'message' => 'Too many OTP requests for this ' . ($reg['is_email'] ? 'email' : 'number') . '. Please try again tomorrow.',
+                ]);
+            }
+     
+            RateLimiter::hit($contactKey, 86400);
+     
+            $otp                     = random_int(100000, 999999);
+            $reg['otp']              = $otp;
+            $reg['otp_expires_at']   = now()->addMinutes(5);
+            $reg['otp_last_sent_at'] = now();
+            session(['reg_data' => $reg]);
+     
+            if ($reg['is_email']) {
+                if (general()->mail_status) {
+                    sendMail(
+                        $reg['contact'],
+                        $reg['name'],
+                        'Your Verification Code - ' . general()->title,
+                        ['name' => $reg['name'], 'otp' => $otp],
+                        'mails.otpMail'
+                    );
+                }
+            } else {
+                $smsResult = sendSMS($reg['contact'], "Your verification code is: {$otp}");
+     
+                if (!$smsResult['success']) {
+                    return response()->json([
+                        'status'  => false,
+                        'message' => 'Could not resend the OTP. Please try again.',
+                    ]);
+                }
+            }
+     
+            return response()->json([
+                'status'         => true,
+                'message'        => 'OTP resent successfully.',
+                'next_resend_in' => 60,
+            ]);
+        }
+     
+        // ============================================================
+        // ACTION: verify_otp  (Step 2 submit)
+        // ============================================================
+        if ($action === 'verify_otp') {
+     
+            $reg = session('reg_data');
+     
+            if (!$reg) {
+                return response()->json([
+                    'status'  => false,
+                    'message' => 'Session expired. Please start registration again.',
+                ]);
+            }
+     
+            if (now()->greaterThan($reg['otp_expires_at'])) {
+                session()->forget('reg_data');
+                return response()->json([
+                    'status'  => false,
+                    'message' => 'OTP has expired. Please start again.',
+                ]);
+            }
+     
+            if ((string) $r->otp !== (string) $reg['otp']) {
+                $reg['verify_attempts'] = ($reg['verify_attempts'] ?? 0) + 1;
+     
+                if ($reg['verify_attempts'] >= 5) {
+                    session()->forget('reg_data');
+                    return response()->json([
+                        'status'  => false,
+                        'message' => 'Too many incorrect attempts. Please start registration again.',
+                        'restart' => true,
+                    ]);
+                }
+     
+                session(['reg_data' => $reg]);
+     
+                return response()->json([
+                    'status' => false,
+                    'errors' => ['otp' => ['The OTP code you entered is incorrect. (' . (5 - $reg['verify_attempts']) . ' attempts left)']],
+                ]);
+            }
+     
+            if ($reg['is_email'] && User::where('email', $reg['contact'])->exists()) {
+                return response()->json(['status' => false, 'message' => 'This email was just registered by someone else.']);
+            }
+            if (!$reg['is_email'] && User::where('mobile', $reg['contact'])->exists()) {
+                return response()->json(['status' => false, 'message' => 'This mobile number was just registered by someone else.']);
+            }
+     
+            // ---- Create the user (matches your original field set) ----
+            $user = new User();
+            $user->name = $reg['name'];
+     
+            if ($reg['is_email']) {
+                $user->email = $reg['contact'];
+            } else {
+                $user->mobile = $reg['contact'];
+            }
+     
+            $user->password      = Hash::make($reg['password']);
+            $user->password_show = $reg['password'];
+            $user->country        = 1;
             $user->save();
-            
-            
-            //**********Send Mail***************//
-
-             if(general()->mail_status && $user->email){
-                //Mail Data
-                $datas =array('user'=>$user);
-                $template ='mails.passwordResetVerify';
-                $toEmail =$user->email;
-                $toName =$user->name;
-                $subject ='Reset Password Code Form '.general()->title;
-            
-                sendMail($toEmail,$toName,$subject,$datas,$template);
+     
+            Auth::login($user);
+            session()->forget('reg_data');
+     
+            // ---- Same welcome mail your original code sent ----
+            if ($user->email && general()->mail_status) {
+                $datas    = ['user' => $user];
+                $template = 'mails.registrationMail';
+                $subject  = 'Registration Successfully Completed in ' . general()->title;
+                sendMail($user->email, $user->name, $subject, $datas, $template);
             }
-            //**********Send Mail***************//
-
-            Session::flash('success','We send Reset Link with 6 digit Code Your Email address!');
-            return Redirect()->route('resetPassword',$token);
-
-        }else{
-          Session::flash('error','Please Provide your email address/mobile number.');
-          return back();  
+     
+            return response()->json([
+                'status'   => true,
+                'message'  => 'Registration successful!',
+                'redirect' => route('customer.dashboard'),
+            ]);
         }
-
-    }else{
-        return view('auth.forget-password');
+     
+        // ============================================================
+        // Unknown/missing action
+        // ============================================================
+        return response()->json([
+            'status'  => false,
+            'message' => 'Invalid request.',
+        ]);
     }
 
 
-        
+    public function forgotPassword(Request $r)
+    {
+        if ($r->isMethod('post')) {
+     
+            $check = $r->validate([
+                'emailormobile' => 'required|max:100',
+            ]);
+            
+    
+            // NOTE: $request->validate() throws an exception and redirects
+            // back automatically on failure — it never returns false, so the
+            // old "if(!$check){...}" block below it was dead code and has
+            // been removed here.
+     
+            // ---- Rate limit: stop the same IP from spamming reset requests
+            // (each one sends a real SMS/email, so this protects cost + abuse) ----
+            $ipKey = 'forgot-password-ip:' . $r->ip();
+     
+            if (RateLimiter::tooManyAttempts($ipKey, 5)) {
+                $seconds = RateLimiter::availableIn($ipKey);
+                Session::flash('error', 'Too many attempts. Please try again in ' . ceil($seconds / 60) . ' minute(s).');
+                return back();
+            }
+            RateLimiter::hit($ipKey, 600); // 10 minutes
+ 
+            // NOTE: the two lines that used to be here —
+            //   Session::flash('success','Recover Password Are Not Allow');
+            //   return back();
+            // — always fired before any of the logic below could run, so
+            // password reset never actually worked. Removed.
+     
+            if (is_numeric($r->emailormobile)) {
+     
+                $user = User::where('mobile', $r->emailormobile)->first();
+     
+                if (!$user) {
+                    Session::flash('error', 'There is no account with the Mobile number you provided.');
+                    return back();
+                }
+                $verifycode          = mt_rand(100000, 999999);
+
+                $token                = Str::random(60);
+                $user->remember_token = $token;
+                $user->verify_code    = $verifycode;
+                $user->save();
+     
+                // ---- Send SMS ----
+                if (general()->sms_status && $user->mobile) {
+     
+                    $to = $user->mobile;
+     
+                    if (strlen($to) != 11) {
+                        // Invalid mobile format — don't silently pretend it
+                        // worked (the old code did "return true" here, which
+                        // would have crashed Laravel trying to render `true`
+                        // as an HTTP response, and also skipped the redirect
+                        // the user needs to actually continue).
+                        Session::flash('error', 'Your mobile number format looks invalid. Please contact support.');
+                        return back();
+                    }
+     
+                    sendSMS($to, "You Forget Password OTP code is {$verifycode}");
+
+                }
+     
+                Session::flash('success', 'We sent an SMS with a 6-digit reset code to your mobile number!');
+                return Redirect()->route('resetPassword', $token);
+     
+            } elseif (filter_var($r->emailormobile, FILTER_VALIDATE_EMAIL)) {
+     
+                $user = User::where('email', $r->emailormobile)->first();
+     
+                if (!$user) {
+                    Session::flash('error', 'There is no account with the Email address you provided.');
+                    return back();
+                }
+     
+                $verifycode           = mt_rand(100000, 999999);
+                $token                 = Str::random(60);
+                $user->remember_token  = $token;
+                $user->verify_code     = $verifycode; // was missing on the email branch before — confirm-password screen needs this to match against
+                $user->save();
+     
+                // ---- Send Mail ----
+                if (general()->mail_status && $user->email) {
+                    $datas    = ['name' => $user->name, 'otp' => $verifycode];
+                    $template = 'mails.otpMail';
+                    $subject  = 'Reset Password Code From ' . general()->title;
+                    sendMail($user->email, $user->name, $subject, $datas, $template);
+                }
+     
+                Session::flash('success', 'We sent a reset link with a 6-digit code to your Email address!');
+                return Redirect()->route('resetPassword', $token);
+     
+            } else {
+                Session::flash('error', 'Please provide your email address or mobile number.');
+                return back();
+            }
+        }
+     
+        return view('auth.forget-password');
     }
 
     public function resetPassword(Request $r,$token){
@@ -370,7 +604,7 @@ class AuthController extends Controller
                         }else{
                         $msg = urlencode("Your Verify OPT Code Is {$verifycode} form  {$general->title}"); //150 characters allowed here
             
-                        $url = smsUrl($to,$msg);
+                        $url = sendSMS($to,$msg);
                     
                         $client = new Client();
                         
@@ -457,7 +691,7 @@ class AuthController extends Controller
                             }else{
                             $msg = urlencode("Your Verify OPT Code Is {$verifycode} form  {$general->title}"); //150 characters allowed here
                 
-                            $url = smsUrl($to,$msg);
+                            $url = sendSMS($to,$msg);
                         
                             $client = new Client();
                             

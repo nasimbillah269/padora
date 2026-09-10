@@ -177,17 +177,43 @@ function sendMail($toEmail,$toName,$subject,$datas,$template,$attachments=null){
 
 }
 
-function sendSMS($to,$msg){
-  $userId = general()->sms_username;
-  $pass = general()->sms_password;
-  $masking = general()->sms_senderid;
-  if(general()->sms_type=='Non Masking'){
-  $url =general()->sms_url_nonmasking; 
-  return "{$url}?username={$userId}&password={$pass}&number={$to}&message={$msg}";
-  }else{
-  $url =general()->sms_url_masking;
-  return "{$url}?username={$userId}&password={$pass}&number={$to}&message={$msg}&senderid={$masking}";
-  }
+function sendSMS($to, $msg)
+{
+    $userId  = general()->sms_username;
+    $pass    = general()->sms_password;
+    $masking = general()->sms_senderid;
+ 
+    if (general()->sms_type == 'Non Masking') {
+        $url = general()->sms_url_nonmasking;
+        $url .= "?username={$userId}&password={$pass}&number={$to}&message=" . urlencode($msg);
+    } else {
+        $url = general()->sms_url_masking;
+        $url .= "?api_key={$userId}&type=text&number={$to}&senderid={$masking}&message=" . urlencode($msg);
+    }
+ 
+    $ch = curl_init($url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 15);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+    $response = curl_exec($ch);
+    curl_close($ch);
+ 
+    // BulkSMSBD can return either a plain "202" or a JSON object like
+    // {"response_code":202,"message_id":...,"success_message":"...","error_message":"..."}
+    // — handle both.
+    $decoded = json_decode($response, true);
+ 
+    if (is_array($decoded) && isset($decoded['response_code'])) {
+        $code = (string) $decoded['response_code'];
+    } else {
+        $code = trim((string) $response);
+    }
+ 
+    return [
+        'success'  => ($code === '202'),
+        'code'     => $code,
+        'response' => $response, // raw, for logging
+    ];
 }
 
 function slider($location=null){

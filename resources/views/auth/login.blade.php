@@ -6,7 +6,7 @@
 <meta property="og:title" content="{{general()->meta_title}}" />
 <meta property="og:description" content="{!!general()->meta_description!!}" />
 <meta property="og:image" content="{!!general()->meta_description!!}" />
-<meta property="og:url" content="{{route('index')}}" />
+<meta property="og:url" content="{{route('login')}}" />
 @endsection @push('css')
 
 <style>
